@@ -1,0 +1,22 @@
+{
+  "name": "nft-reality-cadence-testing",
+  "version": "0.1.0",
+  "description": "NftReality contract tests",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --runInBand",
+    "test:debug": "node --inspect --trace-warnings node_modules/.bin/jest --runInBand --testTimeout=600000"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.16.10",
+    "@babel/preset-env": "^7.16.10",
+    "@onflow/types": "^0.0.4",
+    "@types/jest": "^27.0.5",
+    "babel-jest": "^27.4.6",
+    "flow-js-testing": "^0.2.2",
+    "jest": "^27.4.7",
+    "jest-environment-node": "^27.4.6",
+    "prettier": "^2.3.0",
+    "ts-jest": "^27.0.5"
+  }
+}
