@@ -1,4 +1,5 @@
 import NonFungibleToken from "./NonFungibleToken.cdc"
+import MetadataViews from "./MetadataViews.cdc"
 
 // NftReality Contract
 pub contract NftReality: NonFungibleToken {
@@ -7,7 +8,14 @@ pub contract NftReality: NonFungibleToken {
     pub event ContractInitialized()
     pub event Withdraw(id: UInt64, from: Address?)
     pub event Deposit(id: UInt64, to: Address?)
-    pub event Minted(id: UInt64, itemUuid: String, unit: UInt64, totalUnits: UInt64, metadata: Metadata, additionalInfo: {String: String})
+    pub event Minted(
+        id: UInt64,
+        itemUuid: String,
+        unit: UInt64,
+        totalUnits: UInt64,
+        metadata: Metadata,
+        additionalInfo: {String: String}
+    )
 
     // Paths
     pub let CollectionStoragePath: StoragePath
@@ -46,22 +54,118 @@ pub contract NftReality: NonFungibleToken {
         }
     }
 
+    pub struct NftRealityMetadataView {
+        pub let itemUuid: String
+        pub let unit: UInt64
+        pub let totalUnits: UInt64
+        pub let artwork: String
+        pub let logotype: String
+        pub let description: String
+        pub let creator: String
+        pub let company: String
+        pub let role: String
+        pub let creationDate: String
+
+        init(
+            itemUuid: String,
+            unit: UInt64,
+            totalUnits: UInt64,
+            artwork: String,
+            logotype: String,
+            description: String,
+            creator: String,
+            company: String,
+            role: String,
+            creationDate: String
+        ) {
+            self.itemUuid = itemUuid
+            self.unit = unit
+            self.totalUnits = totalUnits
+            self.artwork = artwork
+            self.logotype = logotype
+            self.description = description
+            self.creator = creator
+            self.company = company
+            self.role = role
+            self.creationDate = creationDate
+        }
+    }
+
     // NftReality nft resource
-    pub resource NFT: NonFungibleToken.INFT {
+    pub resource NFT: NonFungibleToken.INFT, MetadataViews.Resolver {
         pub let id: UInt64
         pub let itemUuid: String
         pub let unit: UInt64
         pub let totalUnits: UInt64
         pub let metadata: Metadata
-        pub let additionalInfo: {String: String}
+        access(self) let additionalInfo: {String: String}
 
-        init(ID: UInt64, itemUuid: String, unit: UInt64, totalUnits: UInt64, metadata: Metadata, additionalInfo: {String: String}) {
+        init(
+            ID: UInt64,
+            itemUuid: String,
+            unit: UInt64,
+            totalUnits: UInt64,
+            metadata: Metadata,
+            additionalInfo: {String: String}
+        ) {
             self.id = ID
             self.itemUuid = itemUuid
             self.unit = unit
             self.totalUnits = totalUnits
             self.metadata = metadata
             self.additionalInfo = additionalInfo
+        }
+
+        pub fun name(): String {
+            return self.metadata.company.concat(" - ").concat(self.metadata.role)
+        }
+
+        pub fun description(): String {
+            return self.metadata.description
+        }
+
+        pub fun imageCID(): String {
+            return self.metadata.artwork
+        }
+
+        pub fun getAdditionalInfo(): {String: String} {
+            return self.additionalInfo
+        }
+
+        pub fun getViews(): [Type] {
+            return [
+                Type<NftRealityMetadataView>(),
+                Type<MetadataViews.Display>()
+            ]
+        }
+
+        pub fun resolveView(_ view: Type): AnyStruct? {
+            switch view {
+                case Type<NftRealityMetadataView>():
+                    return NftRealityMetadataView(
+                        itemUuid: self.itemUuid,
+                        unit: self.unit,
+                        totalUnits: self.totalUnits,
+                        artwork: self.metadata.artwork,
+                        logotype: self.metadata.logotype,
+                        description: self.metadata.description,
+                        creator: self.metadata.creator,
+                        company: self.metadata.company,
+                        role: self.metadata.role,
+                        creationDate: self.metadata.creationDate
+                    )
+                case Type<MetadataViews.Display>():
+                    return MetadataViews.Display(
+                        name: self.name(),
+                        description: self.description(),
+                        thumbnail: MetadataViews.IPFSFile(
+                            cid: self.imageCID(),
+                            path: "sm.png"
+                        )
+                    )
+            }
+
+            return nil
         }
     }
 
@@ -128,7 +232,7 @@ pub contract NftReality: NonFungibleToken {
         }
     }
 
-    // public function that anyone can call to create a new empty collection
+    // Public function that anyone can call to create a new empty collection
     pub fun createEmptyCollection(): @NftReality.Collection {
         return <- create Collection()
     }
@@ -156,7 +260,7 @@ pub contract NftReality: NonFungibleToken {
             ))
 
             NftReality.totalSupply = NftReality.totalSupply + (1 as UInt64)
-		}
+        }
 
         pub fun batchMintNFT(
             itemUuid: String,
@@ -182,7 +286,7 @@ pub contract NftReality: NonFungibleToken {
                 )
             }
         }
-	}
+    }
 
     init (admin: AuthAccount) {
         self.CollectionStoragePath = /storage/nftRealityCollection
@@ -195,5 +299,5 @@ pub contract NftReality: NonFungibleToken {
         admin.save(<-minter, to: self.MinterStoragePath)
 
         emit ContractInitialized()
-	}
+    }
 }

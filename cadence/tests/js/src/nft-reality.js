@@ -1,19 +1,20 @@
 import { Address, UInt64, String, Dictionary } from '@onflow/types';
 import {
-  deployContractByName,
-  executeScript,
   getContractAddress,
   getContractCode,
   getScriptCode,
   getTransactionCode,
   mintFlow,
-  sendTransaction,
 } from 'flow-js-testing';
 import {
+  deployContractByNameWithErrorRaised,
+  sendTransactionWithErrorRaised,
+  executeScriptWithErrorRaised,
   getNftRealityAddress,
   getNftRealityAdminAddress,
   registerContract,
 } from './common';
+import * as faker from 'faker';
 
 /*
  * Deploys NonFungibleToken and NftReality contracts.
@@ -23,12 +24,19 @@ import {
 export const deployNftReality = async () => {
   const NftReality = await getNftRealityAddress();
   const NftRealityAdmin = await getNftRealityAdminAddress();
-  const addressMap = { NonFungibleToken: NftReality };
+  const addressMap = {
+    NonFungibleToken: NftReality,
+    MetadataViews: NftReality,
+  };
 
   await mintFlow(NftReality, '10.0');
-  await deployContractByName({
+  await deployContractByNameWithErrorRaised({
     to: NftReality,
     name: 'NonFungibleToken',
+  });
+  await deployContractByNameWithErrorRaised({
+    to: NftReality,
+    name: 'MetadataViews',
   });
 
   const contractName = 'NftReality';
@@ -45,9 +53,9 @@ export const deployNftReality = async () => {
     [contractName, String],
     [contractCodeHex, String],
   ];
-  await sendTransaction({ code, signers, args });
 
-  return registerContract(contractName, NftReality);
+  await registerContract(contractName, NftReality);
+  return sendTransactionWithErrorRaised({ code, signers, args });
 };
 
 /*
@@ -61,7 +69,7 @@ export const setupNftRealityOnAccount = async (account) => {
   const code = await getTransactionCode({ name });
   const signers = [account];
 
-  return sendTransaction({ code, signers });
+  return sendTransactionWithErrorRaised({ code, signers });
 };
 
 /*
@@ -76,9 +84,7 @@ export const getNftRealitySupply = async () => {
   const name = 'nftReality/read_nft_reality_supply';
   const code = await getScriptCode({ name, addressMap });
 
-  const [result] = await executeScript({ code });
-
-  return result;
+  return executeScriptWithErrorRaised({ code });
 };
 
 /*
@@ -101,14 +107,8 @@ export const mintNftReality = async (
   itemUuid,
   recipient,
   quantity,
-  artwork,
-  logotype,
-  description,
-  creator,
-  company,
-  role,
-  creationDate,
-  additionalInfo,
+  metadata,
+  additionalInfo = {},
 ) => {
   const NftRealityAdmin = await getNftRealityAdminAddress();
   const NonFungibleToken = await getNftRealityAddress();
@@ -117,6 +117,7 @@ export const mintNftReality = async (
   const name = 'nftReality/mint_nft_reality';
   const addressMap = { NonFungibleToken, NftReality };
   const code = await getTransactionCode({ name, addressMap });
+
   const totalUnits = quantity;
   const startingUnit = 1;
 
@@ -127,13 +128,13 @@ export const mintNftReality = async (
     [totalUnits, UInt64],
     [startingUnit, UInt64],
     [quantity, UInt64],
-    [artwork, String],
-    [logotype, String],
-    [description, String],
-    [creator, String],
-    [company, String],
-    [role, String],
-    [creationDate, String],
+    [metadata.artwork, String],
+    [metadata.logotype, String],
+    [metadata.description, String],
+    [metadata.creator, String],
+    [metadata.company, String],
+    [metadata.role, String],
+    [metadata.creationDate, String],
     [
       Object.keys(additionalInfo).map(function (key) {
         return { key, value: additionalInfo[key] };
@@ -142,18 +143,18 @@ export const mintNftReality = async (
     ],
   ];
 
-  return sendTransaction({ code, signers, args });
+  return sendTransactionWithErrorRaised({ code, signers, args });
 };
 
 /*
- * Transfers NftReality NFT with id equal **itemId** from **sender** account to **recipient**.
+ * Transfers NftReality NFT with id equal **collectibleId** from **sender** account to **recipient**.
  * @param {string} sender - sender address
  * @param {string} recipient - recipient address
- * @param {UInt64} itemId - id of the item to transfer
+ * @param {UInt64} collectibleId - id of the item to transfer
  * @throws Will throw an error if execution fails
  * @returns {Promise<*>}
  * */
-export const transferNftReality = async (sender, recipient, itemId) => {
+export const transferNftReality = async (sender, recipient, collectibleId) => {
   const NonFungibleToken = await getNftRealityAddress();
   const NftReality = await getNftRealityAddress();
 
@@ -164,10 +165,10 @@ export const transferNftReality = async (sender, recipient, itemId) => {
   const signers = [sender];
   const args = [
     [recipient, Address],
-    [itemId, UInt64],
+    [collectibleId, UInt64],
   ];
 
-  return sendTransaction({ code, signers, args });
+  return sendTransactionWithErrorRaised({ code, signers, args });
 };
 
 /*
@@ -188,9 +189,48 @@ export const getNftRealityById = async (account, id) => {
     [id, UInt64],
   ];
 
-  const [result] = await executeScript({ code, args });
+  return executeScriptWithErrorRaised({ code, args });
+};
 
-  return result;
+/*
+ * Returns NftReality MetadataViews.
+ * @throws Will throw an error if execution fails
+ * */
+export const getNftRealityMetadataViewsById = async (account, id) => {
+  const NftReality = await getNftRealityAddress();
+  const NonFungibleToken = await getContractAddress('NonFungibleToken');
+  const MetadataViews = await getContractAddress('MetadataViews');
+
+  const name = 'nftReality/read_nft_reality_metadata_views';
+  const addressMap = { NftReality, NonFungibleToken, MetadataViews };
+  const code = await getScriptCode({ name, addressMap });
+
+  const args = [
+    [account, Address],
+    [id, UInt64],
+  ];
+
+  return executeScriptWithErrorRaised({ code, args });
+};
+
+/*
+ * Returns NftReality additionalInfo.
+ * @throws Will throw an error if execution fails
+ * */
+export const getNftRealityAdditionalInfoById = async (account, id) => {
+  const NftReality = await getNftRealityAddress();
+  const NonFungibleToken = await getContractAddress('NonFungibleToken');
+
+  const name = 'nftReality/read_nft_reality_additional_info';
+  const addressMap = { NftReality, NonFungibleToken };
+  const code = await getScriptCode({ name, addressMap });
+
+  const args = [
+    [account, Address],
+    [id, UInt64],
+  ];
+
+  return executeScriptWithErrorRaised({ code, args });
 };
 
 /*
@@ -208,7 +248,20 @@ export const getCollectionLength = async (account) => {
   const code = await getScriptCode({ name, addressMap });
   const args = [[account, Address]];
 
-  const [result] = await executeScript({ code, args });
+  return executeScriptWithErrorRaised({ code, args });
+};
 
-  return result;
+/*
+ * Returns random metadata
+ * */
+export const getRandomMetadata = (metadata = {}) => {
+  return {
+    artwork: metadata.artwork || faker.image.imageUrl(),
+    logotype: metadata.logotype || faker.image.imageUrl(),
+    description: metadata.description || faker.lorem.paragraph(),
+    creator: metadata.creator || faker.random.words(2),
+    company: metadata.company || faker.random.words(2),
+    role: metadata.role || faker.random.words(2),
+    creationDate: metadata.creationDate || faker.random.words(2),
+  };
 };
