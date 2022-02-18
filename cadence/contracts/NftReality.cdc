@@ -288,7 +288,7 @@ pub contract NftReality: NonFungibleToken {
         }
     }
 
-    init (admin: AuthAccount) {
+    init () {
         self.CollectionStoragePath = /storage/nftRealityCollection
         self.CollectionPublicPath = /public/nftRealityCollection
         self.MinterStoragePath = /storage/nftRealityMinter
@@ -296,7 +296,7 @@ pub contract NftReality: NonFungibleToken {
         self.totalSupply = 0
 
         let minter <- create NFTMinter()
-        admin.save(<-minter, to: self.MinterStoragePath)
+        self.account.save(<-minter, to: self.MinterStoragePath)
 
         emit ContractInitialized()
     }

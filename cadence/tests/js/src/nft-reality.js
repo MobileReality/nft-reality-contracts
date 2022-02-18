@@ -11,7 +11,6 @@ import {
   sendTransactionWithErrorRaised,
   executeScriptWithErrorRaised,
   getNftRealityAddress,
-  getNftRealityAdminAddress,
   registerContract,
 } from './common';
 import * as faker from 'faker';
@@ -23,7 +22,6 @@ import * as faker from 'faker';
  * */
 export const deployNftReality = async () => {
   const NftReality = await getNftRealityAddress();
-  const NftRealityAdmin = await getNftRealityAdminAddress();
   const addressMap = {
     NonFungibleToken: NftReality,
     MetadataViews: NftReality,
@@ -47,7 +45,7 @@ export const deployNftReality = async () => {
   const contractCodeHex = Buffer.from(contractCode).toString('hex');
 
   const code = await getTransactionCode({ name: 'nftReality/deploy_contract' });
-  const signers = [NftReality, NftRealityAdmin];
+  const signers = [NftReality];
 
   const args = [
     [contractName, String],
@@ -110,7 +108,6 @@ export const mintNftReality = async (
   metadata,
   additionalInfo = {},
 ) => {
-  const NftRealityAdmin = await getNftRealityAdminAddress();
   const NonFungibleToken = await getNftRealityAddress();
   const NftReality = await getNftRealityAddress();
 
@@ -121,7 +118,7 @@ export const mintNftReality = async (
   const totalUnits = quantity;
   const startingUnit = 1;
 
-  const signers = [NftRealityAdmin];
+  const signers = [NftReality];
   const args = [
     [itemUuid, String],
     [recipient, Address],
