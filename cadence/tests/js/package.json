@@ -1,6 +1,6 @@
 {
   "name": "nft-reality-cadence-testing",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "NftReality contract tests",
   "main": "index.js",
   "scripts": {
@@ -16,7 +16,7 @@
     "@types/uuid": "^8.3.0",
     "babel-jest": "^27.4.6",
     "faker": "^5.1.0",
-    "flow-js-testing": "^0.2.2",
+    "flow-js-testing": "^0.2.3-alpha.2",
     "jest": "^27.4.7",
     "jest-environment-node": "^27.4.6",
     "prettier": "^2.3.0",
